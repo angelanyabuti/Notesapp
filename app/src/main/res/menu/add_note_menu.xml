@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!---adding menu to show the function to user to delete and edit the data-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/add_note" android:title="Add note"></item>
+
+</menu>

@@ -1,76 +1,97 @@
 package com.example.notesapp;
 
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
-import com.google.android.material.snackbar.Snackbar;
-
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-
-import com.example.notesapp.databinding.ActivityMainBinding;
-
-import android.view.Menu;
-import android.view.MenuItem;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MainActivity extends AppCompatActivity {
+    static ArrayList<String> notes = new ArrayList<>();
+    static ArrayAdapter arrayAdapter;
 
-    private AppBarConfiguration appBarConfiguration;
-    private ActivityMainBinding binding;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        setSupportActionBar(binding.toolbar);
-
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-
-        binding.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.add_note_menu,menu);
+
+        return super.onCreateOptionsMenu(menu);
     }
-
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item){
+        super.onOptionsItemSelected(item);
+        if (item.getItemId() == R.id.add_note){
+            //going from MainActivity to NoteEditor
+            Intent intent = new Intent(getApplicationContext(),NoteEditor.class);
+                    startActivity(intent);
             return true;
         }
-
-        return super.onOptionsItemSelected(item);
+        return false;
     }
 
     @Override
-    public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        return NavigationUI.navigateUp(navController, appBarConfiguration)
-                || super.onSupportNavigateUp();
+    protected void onCreate( Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        ListView listView = findViewById(R.id.listView);
+        SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.example.notes", Context.MODE_PRIVATE);
+        HashSet<String> set = (HashSet<String>) sharedPreferences.getStringSet("notes",null);
+
+        if (set == null){
+            notes.add("Example note");
+        }else {notes = new ArrayList<>(set);}
+        //using custom listview given by Android Studio
+        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_expandable_list_item_1,notes);
+        listView.setAdapter(arrayAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            //going from MainActivity to NotesEditorActivity
+                Intent intent = new Intent(getApplicationContext(),NoteEditor.class);
+                 intent.putExtra("noteId",i);
+                startActivity(intent);
+               }
+        });
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                final int itemToDelete = i;
+                //To delete the data from the app
+                new AlertDialog.Builder(MainActivity.this)
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .setTitle("Are you sure?")
+                        .setMessage("Do you want to delete this note?")
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                notes.remove(itemToDelete);
+                                arrayAdapter.notifyDataSetChanged();
+                                SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.example.notes", Context.MODE_PRIVATE);
+                                HashSet<String> set = new HashSet(MainActivity.notes);
+                                sharedPreferences.edit().putStringSet("notes", set).apply();
+
+                            }
+                        }).setNegativeButton("No", null).show();
+
+            }
+                        });
+            }
+
     }
-}
